@@ -59,4 +59,61 @@ router.post("/login", async (req, res) => {
     res.json({ token });
 });
 
+// Route lấy danh sách người dùng
+router.get("/users", async (req, res) => {
+    try {
+        const users = await User.find(); // Lấy tất cả người dùng từ MongoDB
+        res.json(users); // Trả về danh sách người dùng dưới dạng JSON
+    } catch (error) {
+        res.status(500).json({ message: "Lỗi khi lấy dữ liệu người dùng" });
+    }
+});
+
+// Xóa người dùng
+router.delete("/users/:id", async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const user = await User.findById(id);
+        if (!user) {
+            return res
+                .status(404)
+                .json({ message: "Người dùng không tồn tại!" });
+        }
+
+        await User.findByIdAndDelete(id); // Xóa người dùng
+        res.status(200).json({ message: "Người dùng đã được xóa!" });
+    } catch (error) {
+        res.status(500).json({ message: "Lỗi khi xóa người dùng" });
+    }
+});
+
+// Cập nhật thông tin người dùng
+router.put("/users/:id", async (req, res) => {
+    const { id } = req.params;
+    const { fullName, email, phone, role } = req.body;
+
+    try {
+        const user = await User.findById(id);
+        if (!user) {
+            return res
+                .status(404)
+                .json({ message: "Người dùng không tồn tại!" });
+        }
+
+        user.fullName = fullName || user.fullName;
+        user.email = email || user.email;
+        user.phone = phone || user.phone;
+        user.role = role || user.role;
+
+        await user.save();
+
+        res.status(200).json({
+            message: "Thông tin người dùng đã được cập nhật!",
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Lỗi khi cập nhật người dùng" });
+    }
+});
+
 module.exports = router;

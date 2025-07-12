@@ -17,5 +17,6 @@ mongoose
     .catch((err) => console.error("MongoDB Connection Error: ", err));
 
 app.use("/api/auth", require("./routes/auth"));
+app.use("/api/stats", require("./routes/stats"));
 
 app.listen(3001, () => console.log("Server running on port 3001"));

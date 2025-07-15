@@ -26,13 +26,12 @@ router.post("/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     try {
-        // Tạo tài khoản người dùng mới
         const user = new User({
             fullName,
             email,
             phone,
             password: hashedPassword,
-            role, // Role được chọn khi đăng ký
+            role,
         });
 
         await user.save();
@@ -62,8 +61,8 @@ router.post("/login", async (req, res) => {
 // Route lấy danh sách người dùng
 router.get("/users", async (req, res) => {
     try {
-        const users = await User.find(); // Lấy tất cả người dùng từ MongoDB
-        res.json(users); // Trả về danh sách người dùng dưới dạng JSON
+        const users = await User.find();
+        res.json(users);
     } catch (error) {
         res.status(500).json({ message: "Lỗi khi lấy dữ liệu người dùng" });
     }

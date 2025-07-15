@@ -52,14 +52,14 @@ router.get("/total-categories", async (req, res) => {
 router.get("/users-by-month", async (req, res) => {
     try {
         const userStats = await User.aggregate([
-            { $match: { role: "user" } }, // Chỉ lấy dữ liệu ứng viên
+            { $match: { role: "user" } },
             {
                 $group: {
-                    _id: { $month: "$createdAt" }, // Nhóm theo tháng
+                    _id: { $month: "$createdAt" },
                     count: { $sum: 1 },
                 },
             },
-            { $sort: { _id: 1 } }, // Sắp xếp theo tháng
+            { $sort: { _id: 1 } },
         ]);
         res.json(userStats);
     } catch (error) {
@@ -73,14 +73,14 @@ router.get("/users-by-month", async (req, res) => {
 router.get("/employer-by-month", async (req, res) => {
     try {
         const employerStats = await User.aggregate([
-            { $match: { role: "employer" } }, // Chỉ lấy dữ liệu doanh nghiệp
+            { $match: { role: "employer" } },
             {
                 $group: {
-                    _id: { $month: "$createdAt" }, // Nhóm theo tháng
+                    _id: { $month: "$createdAt" },
                     count: { $sum: 1 },
                 },
             },
-            { $sort: { _id: 1 } }, // Sắp xếp theo tháng
+            { $sort: { _id: 1 } },
         ]);
         res.json(employerStats);
     } catch (error) {
@@ -96,11 +96,11 @@ router.get("/jobs-by-month", async (req, res) => {
         const jobStats = await Job.aggregate([
             {
                 $group: {
-                    _id: { $month: "$createdAt" }, // Nhóm theo tháng
+                    _id: { $month: "$createdAt" },
                     count: { $sum: 1 },
                 },
             },
-            { $sort: { _id: 1 } }, // Sắp xếp theo tháng
+            { $sort: { _id: 1 } },
         ]);
         res.json(jobStats);
     } catch (error) {

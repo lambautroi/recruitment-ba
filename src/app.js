@@ -18,5 +18,8 @@ mongoose
 
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/stats", require("./routes/stats"));
+app.use("/api", require("./routes/homepage"));
+app.use("/api", require("./routes/category"));
+app.use("/api", require("./routes/jobNews"));
 
 app.listen(3001, () => console.log("Server running on port 3001"));

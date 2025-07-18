@@ -19,13 +19,12 @@ const candidateSchema = new mongoose.Schema(
             type: String,
         }, // Địa chỉ ứng viên
         education: {
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Education", // Tham chiếu đến bảng Education
         }, // Trình độ học vấn của ứng viên
-        skills: {
-            type: String,
-        }, // Kỹ năng của ứng viên
         experience: {
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Experience", // Tham chiếu đến bảng Experience
         }, // Kinh nghiệm làm việc của ứng viên
         resume_file: {
             type: String,

@@ -1,35 +1,40 @@
 const faker = require("faker");
-const db = require("./db"); // Kết nối MongoDB
+const db = require("./db");
 const Application = require("../models/applicationModel");
 const Job = require("../models/jobModel");
 const User = require("../models/userModel");
+const Candidate = require("../models/candidateModel");
 
-// Tạo dữ liệu giả cho ứng tuyển
-const mockApplications = [];
+// Lấy các người dùng có role là 'user'
+User.find({ role: "user" }).then((users) => {
+    Job.find({}).then((jobs) => {
+        Candidate.find({}).then((candidates) => {
+            const mockApplications = [];
 
-// Tạo 20 hồ sơ ứng tuyển giả lập
-Job.find({}).then((jobs) => {
-    User.find({ role: "user" }).then((users) => {
-        for (let i = 0; i < 20; i++) {
-            mockApplications.push({
-                job_id: jobs[
-                    faker.datatype.number({ min: 0, max: jobs.length - 1 })
-                ]._id,
-                candidate_id:
-                    users[
-                        faker.datatype.number({ min: 0, max: users.length - 1 })
-                    ]._id,
-                resume_file: faker.system.filePath(),
-                status: faker.random.arrayElement([
-                    "applied",
-                    "accepted",
-                    "rejected",
-                ]),
+            users.forEach((user) => {
+                const randomJob =
+                    jobs[faker.datatype.number({ min: 0, max: jobs.length - 1 })];
+                
+                // Tìm candidate theo email của user
+                const candidate = candidates.find(c => c.email === user.email);
+
+                mockApplications.push({
+                    job_id: randomJob._id,
+                    candidate_id: user._id,
+                    resume_file: candidate ? candidate.resume_file : faker.system.filePath(), // Lấy resume_file từ candidate
+                    status: faker.random.arrayElement([
+                        "applied",
+                        "accepted",
+                        "rejected",
+                    ]),
+                    applied_at: faker.date.recent(),
+                });
             });
-        }
 
-        Application.insertMany(mockApplications)
-            .then(() => console.log("Mock applications inserted"))
-            .catch((err) => console.log("Error inserting applications:", err));
+            // Chèn dữ liệu vào MongoDB
+            Application.insertMany(mockApplications)
+                .then(() => console.log("Mock applications inserted"))
+                .catch((err) => console.log("Error inserting applications:", err));
+        });
     });
 });

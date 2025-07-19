@@ -51,11 +51,10 @@ router.get("/filter", async (req, res) => {
         } = req.query;
 
         // Tạo filter cho công việc
-        const filter = {};
+        let filter = {};
 
         if (search) filter.title = { $regex: search, $options: "i" };
         if (location) filter.location_id = location;
-        if (category) filter.category_id = category;
         if (position) filter.position_id = position;
         if (formOfEmployment) filter.form_of_employment_id = formOfEmployment;
         if (experience) filter.experience_id = experience;
@@ -66,11 +65,26 @@ router.get("/filter", async (req, res) => {
             filter.salary_range = { $gte: minSalary.toString() };
         }
 
-        // Lọc và trả về các công việc
+        // Nếu có filter theo category, cần tìm employers có category_id tương ứng
+        if (category) {
+            const employersInCategory = await require("../models/employerModel").find({
+                category_id: category
+            }).select('_id');
+            const employerIds = employersInCategory.map(emp => emp._id);
+            filter.employer_id = { $in: employerIds };
+        }
+
+        // Lọc và trả về các công việc với populate employer để lấy category
         const jobs = await Job.find(filter)
-            .populate("employer_id", "company_name")
+            .populate({
+                path: "employer_id",
+                select: "employer_name category_id",
+                populate: {
+                    path: "category_id",
+                    select: "category_name"
+                }
+            })
             .populate("location_id", "location_name")
-            .populate("category_id", "category_name")
             .populate("position_id", "position_name")
             .populate("experience_id", "experience_level")
             .populate("education_id", "education_level")
@@ -83,11 +97,11 @@ router.get("/filter", async (req, res) => {
             _id: job._id,
             title: job.title,
             employer_name:
-                job.employer_id?.company_name || "Không có thông tin",
+                job.employer_id?.employer_name || "Không có thông tin",
             location_name:
                 job.location_id?.location_name || "Không có thông tin",
             category_name:
-                job.category_id?.category_name || "Không có thông tin",
+                job.employer_id?.category_id?.category_name || "Không có thông tin",
             position_name:
                 job.position_id?.position_name || "Không có thông tin",
             experience_name:

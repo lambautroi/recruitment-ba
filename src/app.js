@@ -22,6 +22,7 @@ app.use("/api", require("./routes/homepage"));
 app.use("/api", require("./routes/category"));
 app.use("/api", require("./routes/jobNews"));
 app.use("/api/jobs", require("./routes/jobpage"));
-
+app.use("/api/companies", require("./routes/companypage"));
+app.use("/api/candidates", require("./routes/candidatepage"));
 
 app.listen(3001, () => console.log("Server running on port 3001"));

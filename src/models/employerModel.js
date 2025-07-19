@@ -19,6 +19,15 @@ const employerSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Location",
         },
+        category_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Category",
+            required: true,
+        },
+        num_job: {
+            type: Number,
+            default: 0,
+        },
     },
     { timestamps: true }
 );

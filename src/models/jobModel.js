@@ -4,7 +4,6 @@ const jobSchema = new mongoose.Schema(
     {
         title: { type: String, required: true }, // Tiêu đề công việc
         employer_id: { type: mongoose.Schema.Types.ObjectId, ref: "Employer" }, // Tham chiếu tới bảng Employer
-        category_id: { type: mongoose.Schema.Types.ObjectId, ref: "Category" }, // Tham chiếu tới bảng Category
         location_id: { type: mongoose.Schema.Types.ObjectId, ref: "Location" }, // Tham chiếu tới bảng Location
         position_id: { type: mongoose.Schema.Types.ObjectId, ref: "Position" }, // Tham chiếu tới bảng Position (Cấp bậc)
         experience_id: { type: mongoose.Schema.Types.ObjectId, ref: "Experience" }, // Tham chiếu tới bảng Experience (Kinh nghiệm)

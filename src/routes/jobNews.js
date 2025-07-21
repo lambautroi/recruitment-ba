@@ -7,16 +7,27 @@ const Category = require("../models/categoryModel");
 router.get("/featured-jobs", async (req, res) => {
     try {
         const categories = await Category.find();
+        const Employer = require("../models/employerModel");
+        
         const categoriesWithJobCount = await Promise.all(
             categories.map(async (category) => {
-                const jobCount = await Job.countDocuments({
+                // Tìm employers thuộc category này
+                const employers = await Employer.find({
                     category_id: category._id,
+                });
+                
+                // Đếm số jobs của các employers này
+                const employerIds = employers.map(emp => emp._id);
+                const jobCount = await Job.countDocuments({
+                    employer_id: { $in: employerIds },
                     status: "active",
                 });
+                
                 return {
                     categoryName: category.category_name,
                     jobCount,
                     categoryId: category._id,
+                    employerIds
                 };
             })
         );
@@ -28,7 +39,7 @@ router.get("/featured-jobs", async (req, res) => {
         const featuredJobs = await Promise.all(
             topCategories.map(async (category) => {
                 const jobs = await Job.find({
-                    category_id: category.categoryId,
+                    employer_id: { $in: category.employerIds },
                     status: "active",
                 })
                     .sort({ posted_at: -1 })

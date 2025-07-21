@@ -13,7 +13,11 @@ const jobSchema = new mongoose.Schema(
             ref: "FormOfEmployment",
         }, // Tham chiếu tới bảng FormOfEmployment (Hình thức làm việc)
         salary_range: { type: String }, // Mức lương
-        job_description: { type: String }, // Mô tả công việc
+        quantity: { type: Number, default: 1 }, // Số lượng tuyển dụng
+        job_description: { 
+            type: mongoose.Schema.Types.Mixed,
+            default: {}
+        }, // Mô tả công việc chi tiết (JSON object)
         posted_at: { type: Date, default: Date.now }, // Ngày đăng công việc
         expiration_date: { type: Date }, // Ngày hết hạn
         status: {

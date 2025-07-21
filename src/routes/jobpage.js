@@ -124,4 +124,59 @@ router.get("/filter", async (req, res) => {
     }
 });
 
+// GET /api/jobs/:id - Lấy thông tin chi tiết một job
+router.get("/:id", async (req, res) => {
+    try {
+        const job = await Job.findById(req.params.id)
+            .populate({
+                path: "employer_id",
+                select: "employer_name employer_logo employer_description contact_info category_id location_id",
+                populate: {
+                    path: "category_id location_id",
+                    select: "category_name location_name"
+                }
+            })
+            .populate("location_id", "location_name")
+            .populate("position_id", "position_name")
+            .populate("experience_id", "experience_level")
+            .populate("education_id", "education_level")
+            .populate("form_of_employment_id", "form_name");
+
+        if (!job) {
+            return res.status(404).json({ message: "Job not found" });
+        }
+
+        const formattedJob = {
+            _id: job._id,
+            title: job.title,
+            employer: {
+                _id: job.employer_id?._id,
+                name: job.employer_id?.employer_name || "Không có thông tin",
+                logo: job.employer_id?.employer_logo,
+                description: job.employer_id?.employer_description,
+                contact_info: job.employer_id?.contact_info,
+                category_name: job.employer_id?.category_id?.category_name || "Chưa xác định",
+                location_name: job.employer_id?.location_id?.location_name || "Chưa xác định"
+            },
+            location_name: job.location_id?.location_name || "Không có thông tin",
+            position_name: job.position_id?.position_name || "Không có thông tin",
+            experience_level: job.experience_id?.experience_level || "Không có thông tin",
+            education_level: job.education_id?.education_level || "Không có thông tin",
+            form_name: job.form_of_employment_id?.form_name || "Không có thông tin",
+            salary_range: job.salary_range || "Thỏa thuận",
+            quantity: job.quantity || 1,
+            job_description: job.job_description || {},
+            posted_at: job.posted_at,
+            expiration_date: job.expiration_date,
+            status: job.status,
+            createdAt: job.createdAt
+        };
+
+        res.json(formattedJob);
+    } catch (error) {
+        console.error("Lỗi khi lấy chi tiết công việc", error);
+        res.status(500).json({ message: "Lỗi khi lấy chi tiết công việc" });
+    }
+});
+
 module.exports = router;

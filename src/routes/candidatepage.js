@@ -10,13 +10,14 @@ const Education = require("../models/educationModel");
 // GET /api/candidates/filter-options - Lấy các options cho bộ lọc
 router.get("/filter-options", async (req, res) => {
     try {
-        const [locations, categories, positions, experiences, educations] = await Promise.all([
-            Location.find({}).select("_id location_name"),
-            Category.find({}).select("_id category_name"),
-            Position.find({}).select("_id position_name"),
-            Experience.find({}).select("_id experience_level"),
-            Education.find({}).select("_id education_level"),
-        ]);
+        const [locations, categories, positions, experiences, educations] =
+            await Promise.all([
+                Location.find({}).select("_id location_name"),
+                Category.find({}).select("_id category_name"),
+                Position.find({}).select("_id position_name"),
+                Experience.find({}).select("_id experience_level"),
+                Education.find({}).select("_id education_level"),
+            ]);
 
         res.json({
             locations,
@@ -122,11 +123,16 @@ router.get("/filter", async (req, res) => {
             email: candidate.email,
             phone: candidate.phone,
             profile_picture: candidate.profile_picture,
-            position_name: candidate.position_id?.position_name || "Chưa xác định",
-            category_name: candidate.category_id?.category_name || "Chưa xác định",
-            location_name: candidate.location_id?.location_name || "Chưa xác định",
-            experience_level: candidate.experience?.experience_level || "Chưa xác định",
-            education_level: candidate.education?.education_level || "Chưa xác định",
+            position_name:
+                candidate.position_id?.position_name || "Chưa xác định",
+            category_name:
+                candidate.category_id?.category_name || "Chưa xác định",
+            location_name:
+                candidate.location_id?.location_name || "Chưa xác định",
+            experience_level:
+                candidate.experience?.experience_level || "Chưa xác định",
+            education_level:
+                candidate.education?.education_level || "Chưa xác định",
             skills: candidate.skills || [],
             gender: candidate.gender,
             salary_expectation: candidate.salary_expectation,
@@ -140,6 +146,7 @@ router.get("/filter", async (req, res) => {
     }
 });
 
+// ✅ XÓA ROUTE DUPLICATE VÀ CHỈ GIỮ LẠI 1 ROUTE /:id DUY NHẤT
 // GET /api/candidates/:id - Lấy thông tin chi tiết một candidate
 router.get("/:id", async (req, res) => {
     try {
@@ -161,16 +168,30 @@ router.get("/:id", async (req, res) => {
             phone: candidate.phone,
             address: candidate.address,
             profile_picture: candidate.profile_picture,
-            position_name: candidate.position_id?.position_name || "Chưa xác định",
-            category_name: candidate.category_id?.category_name || "Chưa xác định",
-            location_name: candidate.location_id?.location_name || "Chưa xác định",
-            experience_level: candidate.experience?.experience_level || "Chưa xác định",
-            education_level: candidate.education?.education_level || "Chưa xác định",
+            position_name:
+                candidate.position_id?.position_name || "Chưa xác định",
+            category_name:
+                candidate.category_id?.category_name || "Chưa xác định",
+            location_name:
+                candidate.location_id?.location_name || "Chưa xác định",
+            experience_level:
+                candidate.experience?.experience_level || "Chưa xác định",
+            education_level:
+                candidate.education?.education_level || "Chưa xác định",
             skills: candidate.skills || [],
             gender: candidate.gender,
             salary_expectation: candidate.salary_expectation,
             resume_file: candidate.resume_file,
             status: candidate.status,
+
+            // ✅ THÊM CÁC TRƯỜNG MỚI
+            birth_date: candidate.birth_date,
+            marital_status: candidate.marital_status,
+            career_objective: candidate.career_objective,
+            work_preference: candidate.work_preference || [],
+            professional_skills: candidate.professional_skills || [],
+            soft_skills: candidate.soft_skills || [],
+
             createdAt: candidate.createdAt,
         };
 

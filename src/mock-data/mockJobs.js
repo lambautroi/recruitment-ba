@@ -146,6 +146,19 @@ const skillsByCategory = {
     ],
 };
 
+const categoryMapping = {
+    "Công nghệ thông tin": "IT",
+    "Kế toán - Kiểm toán": "Kế toán",
+    "Marketing - PR": "Marketing",
+    "Bán hàng": "Bán hàng",
+    "Nhân sự": "Nhân sự",
+    "Y tế - Dược": "IT",
+    "Giáo dục - Đào tạo": "Nhân sự",
+    "Xây dựng": "IT",
+    "Luật - Pháp lý": "Nhân sự",
+    "Thiết kế - Mỹ thuật": "Marketing",
+};
+
 const benefits = [
     "Lương 13 tháng + thưởng theo hiệu quả công việc",
     "Bảo hiểm xã hội, y tế, thất nghiệp đầy đủ",
@@ -166,219 +179,220 @@ const documents = [
     "Giấy xác nhận không có tiền án tiền sự",
 ];
 
-// Tạo dữ liệu mock cho công việc (Job)
-Employer.find({})
-    .then((employers) => {
-        Location.find({}).then((locations) => {
-            Position.find({}).then((positions) => {
-                FormOfEmployment.find({}).then((forms) => {
-                    Experience.find({}).then((experiences) => {
-                        Education.find({}).then((educations) => {
-                            const mockJobs = [];
+// ✅ FUNCTION CHÍNH ĐÃ SỬA
+async function createMockJobs() {
+    try {
+        await Jobs.deleteMany({});
+        console.log("Cleared existing jobs");
 
-                            for (let i = 0; i < 30; i++) {
-                                const randomEmployer =
-                                    employers[
-                                        faker.datatype.number({
-                                            min: 0,
-                                            max: employers.length - 1,
-                                        })
-                                    ];
-                                const randomLocation =
-                                    locations[
-                                        faker.datatype.number({
-                                            min: 0,
-                                            max: locations.length - 1,
-                                        })
-                                    ];
-                                const randomPosition =
-                                    positions[
-                                        faker.datatype.number({
-                                            min: 0,
-                                            max: positions.length - 1,
-                                        })
-                                    ];
-                                const randomForm =
-                                    forms[
-                                        faker.datatype.number({
-                                            min: 0,
-                                            max: forms.length - 1,
-                                        })
-                                    ];
-                                const randomExperience =
-                                    experiences[
-                                        faker.datatype.number({
-                                            min: 0,
-                                            max: experiences.length - 1,
-                                        })
-                                    ];
-                                const randomEducation =
-                                    educations[
-                                        faker.datatype.number({
-                                            min: 0,
-                                            max: educations.length - 1,
-                                        })
-                                    ];
+        const [
+            employers,
+            locations,
+            positions,
+            forms,
+            experiences,
+            educations,
+            categories,
+        ] = await Promise.all([
+            Employer.find({}).populate("category_id", "category_name"),
+            Location.find({}),
+            Position.find({}),
+            FormOfEmployment.find({}),
+            Experience.find({}),
+            Education.find({}),
+            Category.find({}),
+        ]);
 
-                                // Chọn category ngẫu nhiên từ danh sách categories có sẵn
-                                const categoryNames = Object.keys(vietnameseJobs);
-                                const categoryName = faker.random.arrayElement(categoryNames);
-                                const jobCategory = vietnameseJobs[categoryName];
+        if (employers.length === 0) {
+            console.log("No employers found. Please create employers first.");
+            return;
+        }
 
-                                // Tạo title và description phù hợp với category
-                                const jobTitle = faker.random.arrayElement(
-                                    jobCategory.titles
-                                );
-                                const mainDescription =
-                                    faker.random.arrayElements(
-                                        jobCategory.descriptions,
-                                        faker.datatype.number({
-                                            min: 3,
-                                            max: 5,
-                                        })
-                                    );
+        const mockJobs = [];
 
-                                // Tạo skills phù hợp
-                                const jobSkills =
-                                    skillsByCategory[categoryName] ||
-                                    skillsByCategory["Bán hàng"];
-                                const selectedSkills =
-                                    faker.random.arrayElements(
-                                        jobSkills,
-                                        faker.datatype.number({
-                                            min: 3,
-                                            max: 6,
-                                        })
-                                    );
+        for (const employer of employers) {
+            const numJobs = faker.datatype.number({ min: 2, max: 4 });
 
-                                // Tạo mức lương realistic cho VN
-                                const salaryRanges = [
-                                    "8000000-12000000",
-                                    "10000000-15000000",
-                                    "12000000-18000000",
-                                    "15000000-20000000",
-                                    "18000000-25000000",
-                                    "20000000-30000000",
-                                    "5000000-8000000",
-                                    "25000000-35000000",
-                                ];
-                                const salaryRange =
-                                    faker.random.arrayElement(salaryRanges);
+            const employerCategoryName =
+                employer.category_id?.category_name || "Công nghệ thông tin";
+            const jobCategoryKey =
+                categoryMapping[employerCategoryName] || "IT";
+            const jobCategory = vietnameseJobs[jobCategoryKey];
 
-                                // Tạo job_description chi tiết
-                                const jobDescription = {
-                                    basic_info: {
-                                        quantity: faker.datatype.number({
-                                            min: 1,
-                                            max: 10,
-                                        }),
-                                        work_type:
-                                            randomForm.form_name ||
-                                            "Toàn thời gian",
-                                        salary_type: "Lương cố định + thưởng",
-                                    },
-                                    job_details: {
-                                        position: jobTitle.toUpperCase(),
-                                        workplace: `${randomLocation.location_name} và các khu vực lân cận`,
-                                        description: mainDescription,
-                                    },
-                                    requirements: {
-                                        work_experience: [
-                                            `Có kinh nghiệm ${randomExperience.experience_level.toLowerCase()}`,
-                                            `Trình độ tối thiểu ${randomEducation.education_level}`,
-                                            "Có khả năng làm việc độc lập và theo nhóm",
-                                            "Chịu được áp lực công việc cao",
-                                        ],
-                                        professional_skills: selectedSkills,
-                                        soft_skills: [
-                                            "Kỹ năng giao tiếp tốt",
-                                            "Kỹ năng làm việc nhóm",
-                                            "Tư duy logic và sáng tạo",
-                                            "Khả năng học hỏi nhanh",
-                                        ],
-                                        language: faker.random.boolean()
-                                            ? ["Tiếng Anh giao tiếp"]
-                                            : ["Không yêu cầu ngoại ngữ"],
-                                    },
-                                    benefits: {
-                                        insurance: faker.random.arrayElements(
-                                            benefits,
-                                            faker.datatype.number({
-                                                min: 4,
-                                                max: 6,
-                                            })
-                                        ),
-                                    },
-                                    documents: faker.random.arrayElements(
-                                        documents,
-                                        faker.datatype.number({
-                                            min: 4,
-                                            max: 6,
-                                        })
-                                    ),
-                                    contact_info: {
-                                        province: randomLocation.location_name,
-                                        district: faker.address.county(),
-                                        ward: faker.address.streetName(),
-                                        address: `${faker.address.streetAddress()}, ${
-                                            randomLocation.location_name
-                                        }`,
-                                        phone: `0${faker.datatype.number({
-                                            min: 900000000,
-                                            max: 999999999,
-                                        })}`,
-                                        email:
-                                            randomEmployer.contact_info ||
-                                            `hr@${randomEmployer.employer_name
-                                                .toLowerCase()
-                                                .replace(/\s+/g, "")}.com.vn`,
-                                        website: `https://${randomEmployer.employer_name
-                                            .toLowerCase()
-                                            .replace(/\s+/g, "-")}.com.vn`,
-                                    },
-                                };
+            for (let i = 0; i < numJobs; i++) {
+                const randomLocation =
+                    locations[
+                        faker.datatype.number({
+                            min: 0,
+                            max: locations.length - 1,
+                        })
+                    ];
+                const randomPosition =
+                    positions[
+                        faker.datatype.number({
+                            min: 0,
+                            max: positions.length - 1,
+                        })
+                    ];
+                const randomForm =
+                    forms[
+                        faker.datatype.number({ min: 0, max: forms.length - 1 })
+                    ];
+                const randomExperience =
+                    experiences[
+                        faker.datatype.number({
+                            min: 0,
+                            max: experiences.length - 1,
+                        })
+                    ];
+                const randomEducation =
+                    educations[
+                        faker.datatype.number({
+                            min: 0,
+                            max: educations.length - 1,
+                        })
+                    ];
 
-                                mockJobs.push({
-                                    title: jobTitle,
-                                    employer_id: randomEmployer._id,
-                                    location_id: randomLocation._id,
-                                    position_id: randomPosition._id,
-                                    experience_id: randomExperience._id,
-                                    education_id: randomEducation._id,
-                                    form_of_employment_id: randomForm._id,
-                                    salary_range: salaryRange,
-                                    quantity:
-                                        jobDescription.basic_info.quantity,
-                                    job_description: jobDescription,
-                                    posted_at: faker.date.past(),
-                                    expiration_date: faker.date.future(),
-                                    status: "active",
-                                });
-                            }
+                const jobTitle = faker.random.arrayElement(jobCategory.titles);
+                const mainDescription = faker.random.arrayElements(
+                    jobCategory.descriptions,
+                    faker.datatype.number({ min: 3, max: 5 })
+                );
 
-                            Jobs.insertMany(mockJobs)
-                                .then(async () => {
-                                    console.log("Mock jobs inserted");
+                const jobSkills =
+                    skillsByCategory[jobCategoryKey] ||
+                    skillsByCategory["Bán hàng"];
+                const selectedSkills = faker.random.arrayElements(
+                    jobSkills,
+                    faker.datatype.number({ min: 3, max: 6 })
+                );
 
-                                    // Cập nhật num_job cho mỗi employer
-                                    for (const employer of employers) {
-                                        const jobCount =
-                                            await Jobs.countDocuments({
-                                                employer_id: employer._id,
-                                            });
-                                        await Employer.findByIdAndUpdate(
-                                            employer._id,
-                                            { num_job: jobCount }
-                                        );
-                                    }
-                                    console.log("Employer job counts updated");
-                                })
-                                .catch((err) =>
-                                    console.log("Error inserting jobs:", err)
-                                );
-                        });
-                    });
+                const salaryRanges = [
+                    "Từ 5 triệu đến 8 triệu",
+                    "Từ 8 triệu đến 12 triệu",
+                    "Từ 10 triệu đến 15 triệu",
+                    "Từ 12 triệu đến 18 triệu",
+                    "Từ 15 triệu đến 20 triệu",
+                    "Từ 18 triệu đến 25 triệu",
+                    "Từ 20 triệu đến 30 triệu",
+                    "Trên 25 triệu",
+                    "Thỏa thuận",
+                ];
+                const salaryRange = faker.random.arrayElement(salaryRanges);
+
+                const jobDescription = {
+                    basic_info: {
+                        quantity: faker.datatype.number({ min: 1, max: 5 }),
+                        work_type: randomForm?.form_name || "Toàn thời gian",
+                        salary_type: "Lương cố định + thưởng",
+                    },
+                    job_details: {
+                        position: jobTitle,
+                        workplace: `${
+                            randomLocation?.location_name || "Hà Nội"
+                        } và các khu vực lân cận`,
+                        description: mainDescription,
+                    },
+                    requirements: {
+                        work_experience: [
+                            `Có kinh nghiệm ${
+                                randomExperience?.experience_level?.toLowerCase() ||
+                                "từ 1-2 năm"
+                            }`,
+                            `Trình độ tối thiểu ${
+                                randomEducation?.education_level || "Đại học"
+                            }`,
+                            "Có khả năng làm việc độc lập và theo nhóm",
+                            "Chịu được áp lực công việc cao",
+                        ],
+                        professional_skills: selectedSkills,
+                        soft_skills: [
+                            "Kỹ năng giao tiếp tốt",
+                            "Kỹ năng làm việc nhóm",
+                            "Tư duy logic và sáng tạo",
+                            "Khả năng học hỏi nhanh",
+                        ],
+                        language: faker.random.boolean()
+                            ? ["Tiếng Anh giao tiếp"]
+                            : ["Không yêu cầu ngoại ngữ"],
+                    },
+                    benefits: {
+                        insurance: faker.random.arrayElements(
+                            benefits,
+                            faker.datatype.number({ min: 4, max: 6 })
+                        ),
+                    },
+                    documents: faker.random.arrayElements(
+                        documents,
+                        faker.datatype.number({ min: 4, max: 6 })
+                    ),
+                    contact_info: {
+                        province: randomLocation?.location_name || "Hà Nội",
+                        district: faker.address.county(),
+                        ward: faker.address.streetName(),
+                        address: `${faker.address.streetAddress()}, ${
+                            randomLocation?.location_name || "Hà Nội"
+                        }`,
+                        phone: `0${faker.datatype.number({
+                            min: 900000000,
+                            max: 999999999,
+                        })}`,
+                        email:
+                            employer.contact_info ||
+                            `hr@${
+                                employer.employer_name
+                                    ?.toLowerCase()
+                                    .replace(/\s+/g, "") || "company"
+                            }.com.vn`,
+                        website: `https://${
+                            employer.employer_name
+                                ?.toLowerCase()
+                                .replace(/\s+/g, "-") || "company"
+                        }.com.vn`,
+                    },
+                };
+
+                mockJobs.push({
+                    title: jobTitle,
+                    employer_id: employer._id,
+                    location_id: randomLocation?._id,
+                    category_id: employer.category_id?._id,
+                    position_id: randomPosition?._id,
+                    experience_id: randomExperience?._id,
+                    education_id: randomEducation?._id,
+                    form_of_employment_id: randomForm?._id,
+                    salary_range: salaryRange,
+                    quantity: jobDescription.basic_info.quantity,
+                    job_description: jobDescription,
+                    posted_at: faker.date.recent(30),
+                    expiration_date: faker.date.future(0.1),
+                    status: "active",
                 });
+            }
+        }
+
+        const insertedJobs = await Jobs.insertMany(mockJobs);
+        console.log(`✅ Created ${insertedJobs.length} mock jobs`);
+
+        for (const employer of employers) {
+            const jobCount = await Jobs.countDocuments({
+                employer_id: employer._id,
+                status: "active",
             });
-        });
-    });
+            await Employer.findByIdAndUpdate(employer._id, {
+                num_job: jobCount,
+            });
+        }
+        console.log("✅ Updated employer job counts");
+
+        console.log("\n📊 THỐNG KÊ:");
+        console.log(`- Tổng số jobs: ${insertedJobs.length}`);
+        console.log(`- Số employers có jobs: ${employers.length}`);
+    } catch (error) {
+        console.error("❌ Error creating mock jobs:", error);
+    } finally {
+        process.exit(0);
+    }
+}
+
+createMockJobs();

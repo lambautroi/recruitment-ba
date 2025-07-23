@@ -2,29 +2,36 @@ const mongoose = require("mongoose");
 
 const jobSchema = new mongoose.Schema(
     {
-        title: { type: String, required: true }, // Tiêu đề công việc
-        employer_id: { type: mongoose.Schema.Types.ObjectId, ref: "Employer" }, // Tham chiếu tới bảng Employer
-        location_id: { type: mongoose.Schema.Types.ObjectId, ref: "Location" }, // Tham chiếu tới bảng Location
-        position_id: { type: mongoose.Schema.Types.ObjectId, ref: "Position" }, // Tham chiếu tới bảng Position (Cấp bậc)
-        experience_id: { type: mongoose.Schema.Types.ObjectId, ref: "Experience" }, // Tham chiếu tới bảng Experience (Kinh nghiệm)
-        education_id: { type: mongoose.Schema.Types.ObjectId, ref: "Education" }, // Tham chiếu tới bảng Education (Trình độ học vấn)
+        title: { type: String, required: true },
+        employer_id: { type: mongoose.Schema.Types.ObjectId, ref: "Employer" },
+        location_id: { type: mongoose.Schema.Types.ObjectId, ref: "Location" },
+        category_id: { type: mongoose.Schema.Types.ObjectId, ref: "Category" }, // ✅ THÊM TRƯỜNG NÀY
+        position_id: { type: mongoose.Schema.Types.ObjectId, ref: "Position" },
+        experience_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Experience",
+        },
+        education_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Education",
+        },
         form_of_employment_id: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "FormOfEmployment",
-        }, // Tham chiếu tới bảng FormOfEmployment (Hình thức làm việc)
-        salary_range: { type: String }, // Mức lương
-        quantity: { type: Number, default: 1 }, // Số lượng tuyển dụng
-        job_description: { 
+        },
+        salary_range: { type: String },
+        quantity: { type: Number, default: 1 },
+        job_description: {
             type: mongoose.Schema.Types.Mixed,
-            default: {}
-        }, // Mô tả công việc chi tiết (JSON object)
-        posted_at: { type: Date, default: Date.now }, // Ngày đăng công việc
-        expiration_date: { type: Date }, // Ngày hết hạn
+            default: {},
+        },
+        posted_at: { type: Date, default: Date.now },
+        expiration_date: { type: Date },
         status: {
             type: String,
             enum: ["active", "inactive"],
             default: "active",
-        }, // Trạng thái công việc (active hoặc inactive)
+        },
     },
     { timestamps: true }
 );

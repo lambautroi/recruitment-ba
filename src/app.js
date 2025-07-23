@@ -24,5 +24,16 @@ app.use("/api", require("./routes/jobNews"));
 app.use("/api/jobs", require("./routes/jobpage"));
 app.use("/api/companies", require("./routes/companypage"));
 app.use("/api/candidates", require("./routes/candidatepage"));
+app.use("/api/employer", require("./routes/employerProfile"));
+app.use("/uploads", express.static("uploads"));
+app.use("/uploads", (req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET");
+    res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept"
+    );
+    next();
+});
 
 app.listen(3001, () => console.log("Server running on port 3001"));

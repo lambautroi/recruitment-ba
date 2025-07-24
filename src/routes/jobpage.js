@@ -53,6 +53,9 @@ router.get("/filter", async (req, res) => {
         // Tạo filter cho công việc
         let filter = {};
 
+        // ✅ THÊM: Chỉ lấy những tin có status là "active"
+        filter.status = "active";
+
         if (search) filter.title = { $regex: search, $options: "i" };
         if (location) filter.location_id = location;
         if (position) filter.position_id = position;
@@ -60,17 +63,18 @@ router.get("/filter", async (req, res) => {
         if (experience) filter.experience_id = experience;
         if (education) filter.education_id = education;
         if (salaryRange) {
-            // Lọc theo mức lương tối thiểu
             const minSalary = parseInt(salaryRange);
             filter.salary_range = { $gte: minSalary.toString() };
         }
 
         // Nếu có filter theo category, cần tìm employers có category_id tương ứng
         if (category) {
-            const employersInCategory = await require("../models/employerModel").find({
-                category_id: category
-            }).select('_id');
-            const employerIds = employersInCategory.map(emp => emp._id);
+            const employersInCategory = await require("../models/employerModel")
+                .find({
+                    category_id: category,
+                })
+                .select("_id");
+            const employerIds = employersInCategory.map((emp) => emp._id);
             filter.employer_id = { $in: employerIds };
         }
 
@@ -81,8 +85,8 @@ router.get("/filter", async (req, res) => {
                 select: "employer_name category_id",
                 populate: {
                     path: "category_id",
-                    select: "category_name"
-                }
+                    select: "category_name",
+                },
             })
             .populate("location_id", "location_name")
             .populate("position_id", "position_name")
@@ -101,7 +105,8 @@ router.get("/filter", async (req, res) => {
             location_name:
                 job.location_id?.location_name || "Không có thông tin",
             category_name:
-                job.employer_id?.category_id?.category_name || "Không có thông tin",
+                job.employer_id?.category_id?.category_name ||
+                "Không có thông tin",
             position_name:
                 job.position_id?.position_name || "Không có thông tin",
             experience_name:
@@ -127,14 +132,17 @@ router.get("/filter", async (req, res) => {
 // GET /api/jobs/:id - Lấy thông tin chi tiết một job
 router.get("/:id", async (req, res) => {
     try {
-        const job = await Job.findById(req.params.id)
+        const job = await Job.findOne({
+            _id: req.params.id,
+            status: "active", // ✅ THÊM điều kiện status active
+        })
             .populate({
                 path: "employer_id",
                 select: "employer_name employer_logo employer_description contact_info category_id location_id",
                 populate: {
                     path: "category_id location_id",
-                    select: "category_name location_name"
-                }
+                    select: "category_name location_name",
+                },
             })
             .populate("location_id", "location_name")
             .populate("position_id", "position_name")
@@ -143,7 +151,9 @@ router.get("/:id", async (req, res) => {
             .populate("form_of_employment_id", "form_name");
 
         if (!job) {
-            return res.status(404).json({ message: "Job not found" });
+            return res
+                .status(404)
+                .json({ message: "Job not found or inactive" });
         }
 
         const formattedJob = {
@@ -155,21 +165,30 @@ router.get("/:id", async (req, res) => {
                 logo: job.employer_id?.employer_logo,
                 description: job.employer_id?.employer_description,
                 contact_info: job.employer_id?.contact_info,
-                category_name: job.employer_id?.category_id?.category_name || "Chưa xác định",
-                location_name: job.employer_id?.location_id?.location_name || "Chưa xác định"
+                category_name:
+                    job.employer_id?.category_id?.category_name ||
+                    "Chưa xác định",
+                location_name:
+                    job.employer_id?.location_id?.location_name ||
+                    "Chưa xác định",
             },
-            location_name: job.location_id?.location_name || "Không có thông tin",
-            position_name: job.position_id?.position_name || "Không có thông tin",
-            experience_level: job.experience_id?.experience_level || "Không có thông tin",
-            education_level: job.education_id?.education_level || "Không có thông tin",
-            form_name: job.form_of_employment_id?.form_name || "Không có thông tin",
+            location_name:
+                job.location_id?.location_name || "Không có thông tin",
+            position_name:
+                job.position_id?.position_name || "Không có thông tin",
+            experience_level:
+                job.experience_id?.experience_level || "Không có thông tin",
+            education_level:
+                job.education_id?.education_level || "Không có thông tin",
+            form_name:
+                job.form_of_employment_id?.form_name || "Không có thông tin",
             salary_range: job.salary_range || "Thỏa thuận",
             quantity: job.quantity || 1,
             job_description: job.job_description || {},
             posted_at: job.posted_at,
             expiration_date: job.expiration_date,
             status: job.status,
-            createdAt: job.createdAt
+            createdAt: job.createdAt,
         };
 
         res.json(formattedJob);

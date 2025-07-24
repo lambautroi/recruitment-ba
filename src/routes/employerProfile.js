@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const auth = require("../middleware/auth");
 
 // Middleware xác thực token
 const authenticateToken = (req, res, next) => {
@@ -92,19 +93,18 @@ router.post(
 );
 
 // GET /api/employer/profile - Lấy thông tin profile
-router.get("/profile", authenticateToken, async (req, res) => {
+router.get("/profile", auth, async (req, res) => {
     try {
+        // ✅ KIỂM TRA ROLE
         if (req.user.role !== "employer") {
-            return res.status(403).json({ message: "Access denied" });
+            return res
+                .status(403)
+                .json({ message: "Chỉ nhà tuyển dụng mới có thể truy cập" });
         }
 
-        const user = await User.findById(req.user.id);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
+        // ✅ TÌM EMPLOYER THEO EMAIL
         const employer = await Employer.findOne({
-            $or: [{ user_id: req.user.id }, { email: user.email }],
+            email: req.user.email,
         })
             .populate("location_id", "location_name")
             .populate("category_id", "category_name");
@@ -112,26 +112,34 @@ router.get("/profile", authenticateToken, async (req, res) => {
         if (!employer) {
             return res
                 .status(404)
-                .json({ message: "Employer profile not found" });
+                .json({ message: "Không tìm thấy thông tin doanh nghiệp" });
         }
 
         res.json(employer);
     } catch (error) {
         console.error("Error fetching employer profile:", error);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ message: "Lỗi server", error: error.message });
     }
 });
 
 // PUT /api/employer/profile - Cập nhật thông tin profile
-router.put("/profile", authenticateToken, async (req, res) => {
+router.put("/profile", auth, async (req, res) => {
     try {
         if (req.user.role !== "employer") {
-            return res.status(403).json({ message: "Access denied" });
+            return res
+                .status(403)
+                .json({ message: "Chỉ nhà tuyển dụng mới có thể cập nhật" });
         }
 
-        const user = await User.findById(req.user.id);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
+        // ✅ TÌM EMPLOYER THEO EMAIL
+        const employer = await Employer.findOne({
+            email: req.user.email,
+        });
+
+        if (!employer) {
+            return res
+                .status(404)
+                .json({ message: "Không tìm thấy thông tin doanh nghiệp" });
         }
 
         const {
@@ -152,6 +160,7 @@ router.put("/profile", authenticateToken, async (req, res) => {
             employer_logo,
         } = req.body;
 
+        // ✅ CHỈ CẬP NHẬT CÁC FIELD KHÔNG TRỐNG
         const updateData = {};
 
         if (employer_name !== undefined && employer_name !== null)
@@ -185,26 +194,18 @@ router.put("/profile", authenticateToken, async (req, res) => {
 
         console.log("Update data:", updateData);
 
-        const updatedEmployer = await Employer.findOneAndUpdate(
-            {
-                $or: [{ user_id: req.user.id }, { email: user.email }],
-            },
+        const updatedEmployer = await Employer.findByIdAndUpdate(
+            employer._id,
             updateData,
             { new: true, runValidators: false }
         )
             .populate("location_id", "location_name")
             .populate("category_id", "category_name");
 
-        if (!updatedEmployer) {
-            return res
-                .status(404)
-                .json({ message: "Employer profile not found" });
-        }
-
         res.json(updatedEmployer);
     } catch (error) {
         console.error("Error updating employer profile:", error);
-        res.status(500).json({ message: "Server error", error: error.message });
+        res.status(500).json({ message: "Lỗi server", error: error.message });
     }
 });
 

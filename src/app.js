@@ -24,6 +24,7 @@ app.use("/api", require("./routes/jobNews"));
 app.use("/api/jobs", require("./routes/jobpage"));
 app.use("/api/companies", require("./routes/companypage"));
 app.use("/api/candidates", require("./routes/candidatepage"));
+app.use("/api/employer/jobs", require("./routes/employerJobs"));
 app.use("/api/employer", require("./routes/employerProfile"));
 app.use("/uploads", express.static("uploads"));
 app.use("/uploads", (req, res, next) => {

@@ -52,8 +52,6 @@ router.get("/filter", async (req, res) => {
 
         // Tạo filter cho công việc
         let filter = {};
-
-        // ✅ THÊM: Chỉ lấy những tin có status là "active"
         filter.status = "active";
 
         if (search) filter.title = { $regex: search, $options: "i" };
@@ -67,15 +65,8 @@ router.get("/filter", async (req, res) => {
             filter.salary_range = { $gte: minSalary.toString() };
         }
 
-        // Nếu có filter theo category, cần tìm employers có category_id tương ứng
         if (category) {
-            const employersInCategory = await require("../models/employerModel")
-                .find({
-                    category_id: category,
-                })
-                .select("_id");
-            const employerIds = employersInCategory.map((emp) => emp._id);
-            filter.employer_id = { $in: employerIds };
+            filter.category_id = category;
         }
 
         // Lọc và trả về các công việc với populate employer để lấy category
@@ -83,11 +74,8 @@ router.get("/filter", async (req, res) => {
             .populate({
                 path: "employer_id",
                 select: "employer_name category_id",
-                populate: {
-                    path: "category_id",
-                    select: "category_name",
-                },
             })
+            .populate("category_id", "category_name")
             .populate("location_id", "location_name")
             .populate("position_id", "position_name")
             .populate("experience_id", "experience_level")
@@ -105,8 +93,7 @@ router.get("/filter", async (req, res) => {
             location_name:
                 job.location_id?.location_name || "Không có thông tin",
             category_name:
-                job.employer_id?.category_id?.category_name ||
-                "Không có thông tin",
+                job.category_id?.category_name || "Không có thông tin",
             position_name:
                 job.position_id?.position_name || "Không có thông tin",
             experience_name:
@@ -134,7 +121,7 @@ router.get("/:id", async (req, res) => {
     try {
         const job = await Job.findOne({
             _id: req.params.id,
-            status: "active", // ✅ THÊM điều kiện status active
+            status: "active",
         })
             .populate({
                 path: "employer_id",
@@ -144,6 +131,7 @@ router.get("/:id", async (req, res) => {
                     select: "category_name location_name",
                 },
             })
+            .populate("category_id", "category_name")
             .populate("location_id", "location_name")
             .populate("position_id", "position_name")
             .populate("experience_id", "experience_level")
@@ -167,11 +155,13 @@ router.get("/:id", async (req, res) => {
                 contact_info: job.employer_id?.contact_info,
                 category_name:
                     job.employer_id?.category_id?.category_name ||
-                    "Chưa xác định",
+                    "Chưa xác định", // ✅ Category của employer
                 location_name:
                     job.employer_id?.location_id?.location_name ||
                     "Chưa xác định",
             },
+            category_name:
+                job.category_id?.category_name || "Không có thông tin", // ✅ THÊM: Category của job
             location_name:
                 job.location_id?.location_name || "Không có thông tin",
             position_name:

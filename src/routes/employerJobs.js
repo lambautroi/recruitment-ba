@@ -259,4 +259,68 @@ router.put("/:id", auth, async (req, res) => {
     }
 });
 
+// POST /api/employer/jobs - Tạo tin tuyển dụng mới
+router.post("/", auth, async (req, res) => {
+    try {
+        // Tìm employer theo email của user
+        const employer = await Employer.findOne({
+            email: req.user.email,
+        });
+
+        if (!employer) {
+            return res
+                .status(404)
+                .json({ message: "Không tìm thấy thông tin doanh nghiệp" });
+        }
+
+        // Tạo job mới
+        const newJob = new Job({
+            title: req.body.title,
+            employer_id: employer._id,
+            category_id: req.body.category_id,
+            location_id: req.body.location_id,
+            position_id: req.body.position_id,
+            experience_id: req.body.experience_id,
+            education_id: req.body.education_id,
+            form_of_employment_id: req.body.form_of_employment_id,
+            salary_range: req.body.salary_range,
+            quantity: req.body.quantity,
+            job_description: req.body.job_description,
+            expiration_date: req.body.expiration_date,
+            status: req.body.status || "active",
+            posted_at: new Date(),
+        });
+
+        const savedJob = await newJob.save();
+
+        // Cập nhật số lượng job của employer
+        await Employer.findByIdAndUpdate(employer._id, {
+            $inc: { num_job: 1 },
+        });
+
+        res.status(201).json({
+            message: "Tạo tin tuyển dụng thành công",
+            job: savedJob,
+        });
+    } catch (error) {
+        console.error("Lỗi khi tạo tin tuyển dụng:", error);
+
+        // Xử lý validation errors
+        if (error.name === "ValidationError") {
+            const errors = Object.values(error.errors).map(
+                (err) => err.message
+            );
+            return res.status(400).json({
+                message: "Dữ liệu không hợp lệ",
+                errors: errors,
+            });
+        }
+
+        res.status(500).json({
+            message: "Lỗi server",
+            error: error.message,
+        });
+    }
+});
+
 module.exports = router;

@@ -26,6 +26,15 @@ app.use("/api/companies", require("./routes/companypage"));
 app.use("/api/candidates", require("./routes/candidatepage"));
 app.use("/api/employer/jobs", require("./routes/employerJobs"));
 app.use("/api/employer", require("./routes/employerProfile"));
+app.use("/api/categories", require("./routes/modelRoute/categories"));
+app.use("/api/locations", require("./routes/modelRoute/locations"));
+app.use("/api/positions", require("./routes/modelRoute/positions"));
+app.use("/api/experiences", require("./routes/modelRoute/experiences"));
+app.use("/api/educations", require("./routes/modelRoute/educations"));
+app.use(
+    "/api/form-of-employments",
+    require("./routes/modelRoute/formOfEmployments")
+);
 app.use("/uploads", express.static("uploads"));
 app.use("/uploads", (req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");

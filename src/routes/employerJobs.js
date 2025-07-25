@@ -5,16 +5,16 @@ const Employer = require("../models/employerModel");
 const Category = require("../models/categoryModel");
 const Application = require("../models/applicationModel");
 const User = require("../models/userModel");
-const auth = require("../middleware/auth"); 
+const auth = require("../middleware/auth");
 
 // GET /api/employer/jobs - Lấy danh sách tin tuyển dụng của employer
 router.get("/", auth, async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
-        
+
         // ✅ SỬA: Tìm employer theo email của user
         const employer = await Employer.findOne({
-            email: req.user.email
+            email: req.user.email,
         });
 
         if (!employer) {
@@ -90,11 +90,13 @@ router.put("/:id/status", auth, async (req, res) => {
 
         // ✅ SỬA: Tìm employer theo email của user
         const employer = await Employer.findOne({
-            email: req.user.email
+            email: req.user.email,
         });
 
         if (!employer) {
-            return res.status(404).json({ message: "Không tìm thấy thông tin doanh nghiệp" });
+            return res
+                .status(404)
+                .json({ message: "Không tìm thấy thông tin doanh nghiệp" });
         }
 
         const job = await Job.findOne({
@@ -125,11 +127,13 @@ router.delete("/:id", auth, async (req, res) => {
 
         // ✅ SỬA: Tìm employer theo email của user
         const employer = await Employer.findOne({
-            email: req.user.email
+            email: req.user.email,
         });
 
         if (!employer) {
-            return res.status(404).json({ message: "Không tìm thấy thông tin doanh nghiệp" });
+            return res
+                .status(404)
+                .json({ message: "Không tìm thấy thông tin doanh nghiệp" });
         }
 
         const job = await Job.findOne({
@@ -164,11 +168,13 @@ router.get("/:id", auth, async (req, res) => {
 
         // ✅ SỬA: Tìm employer theo email của user
         const employer = await Employer.findOne({
-            email: req.user.email
+            email: req.user.email,
         });
 
         if (!employer) {
-            return res.status(404).json({ message: "Không tìm thấy thông tin doanh nghiệp" });
+            return res
+                .status(404)
+                .json({ message: "Không tìm thấy thông tin doanh nghiệp" });
         }
 
         const job = await Job.findOne({
@@ -192,6 +198,64 @@ router.get("/:id", auth, async (req, res) => {
     } catch (error) {
         console.error("Lỗi khi lấy chi tiết tin tuyển dụng:", error);
         res.status(500).json({ message: "Lỗi server" });
+    }
+});
+
+// PUT /api/employer/jobs/:id - Cập nhật tin tuyển dụng
+router.put("/:id", auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Tìm employer theo email của user
+        const employer = await Employer.findOne({
+            email: req.user.email,
+        });
+
+        if (!employer) {
+            return res
+                .status(404)
+                .json({ message: "Không tìm thấy thông tin doanh nghiệp" });
+        }
+
+        // Kiểm tra job có thuộc về employer này không
+        const job = await Job.findOne({
+            _id: id,
+            employer_id: employer._id,
+        });
+
+        if (!job) {
+            return res
+                .status(404)
+                .json({ message: "Không tìm thấy tin tuyển dụng" });
+        }
+
+        // Cập nhật job
+        const updatedJob = await Job.findByIdAndUpdate(
+            id,
+            {
+                title: req.body.title,
+                category_id: req.body.category_id,
+                location_id: req.body.location_id,
+                position_id: req.body.position_id,
+                experience_id: req.body.experience_id,
+                education_id: req.body.education_id,
+                form_of_employment_id: req.body.form_of_employment_id,
+                salary_range: req.body.salary_range,
+                quantity: req.body.quantity,
+                job_description: req.body.job_description,
+                expiration_date: req.body.expiration_date,
+                status: req.body.status,
+            },
+            { new: true, runValidators: true }
+        );
+
+        res.json({
+            message: "Cập nhật tin tuyển dụng thành công",
+            job: updatedJob,
+        });
+    } catch (error) {
+        console.error("Lỗi khi cập nhật tin tuyển dụng:", error);
+        res.status(500).json({ message: "Lỗi server", error: error.message });
     }
 });
 

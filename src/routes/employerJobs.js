@@ -12,7 +12,6 @@ router.get("/", auth, async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
 
-        // ✅ SỬA: Tìm employer theo email của user
         const employer = await Employer.findOne({
             email: req.user.email,
         });

@@ -26,6 +26,7 @@ app.use("/api/companies", require("./routes/companypage"));
 app.use("/api/candidates", require("./routes/candidatepage"));
 app.use("/api/employer/jobs", require("./routes/employerJobs"));
 app.use("/api/employer", require("./routes/employerProfile"));
+app.use("/api/candidate", require("./routes/candidateRoutes"));
 app.use("/api/categories", require("./routes/modelRoute/categories"));
 app.use("/api/locations", require("./routes/modelRoute/locations"));
 app.use("/api/positions", require("./routes/modelRoute/positions"));

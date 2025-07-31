@@ -280,8 +280,6 @@ User.find({ role: "user" }).then((users) => {
                 });
             });
 
-            // ...existing code...
-
             // Chèn dữ liệu vào MongoDB sau khi tạo xong toàn bộ mock dữ liệu
             Candidate.insertMany(mockCandidates)
                 .then(() => console.log("Mock candidates inserted"))

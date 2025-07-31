@@ -60,13 +60,12 @@ router.get("/filter", async (req, res) => {
         if (formOfEmployment) filter.form_of_employment_id = formOfEmployment;
         if (experience) filter.experience_id = experience;
         if (education) filter.education_id = education;
+        if (category) {
+            filter.category_id = category;
+        }
         if (salaryRange) {
             const minSalary = parseInt(salaryRange);
             filter.salary_range = { $gte: minSalary.toString() };
-        }
-
-        if (category) {
-            filter.category_id = category;
         }
 
         // Lọc và trả về các công việc với populate employer để lấy category
@@ -155,7 +154,7 @@ router.get("/:id", async (req, res) => {
                 contact_info: job.employer_id?.contact_info,
                 category_name:
                     job.employer_id?.category_id?.category_name ||
-                    "Chưa xác định", // ✅ Category của employer
+                    "Chưa xác định",
                 location_name:
                     job.employer_id?.location_id?.location_name ||
                     "Chưa xác định",

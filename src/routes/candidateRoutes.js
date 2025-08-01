@@ -384,20 +384,20 @@ router.get("/applied-jobs", auth, async (req, res) => {
 
 function getStatusText(status) {
     const statusMap = {
-        'applied': 'Đã ứng tuyển',
-        'accepted': 'Được chấp nhận',
-        'rejected': 'Bị từ chối'
+        applied: "Đã ứng tuyển",
+        accepted: "Được chấp nhận",
+        rejected: "Bị từ chối",
     };
     return statusMap[status] || status;
 }
 
 function getStatusColor(status) {
     const colorMap = {
-        'applied': 'blue',
-        'accepted': 'green',
-        'rejected': 'red'
+        applied: "blue",
+        accepted: "green",
+        rejected: "red",
     };
-    return colorMap[status] || 'gray';
+    return colorMap[status] || "gray";
 }
 
 // route GET /api/candidate/saved-jobs
@@ -432,20 +432,23 @@ router.get("/saved-jobs", auth, async (req, res) => {
                     {
                         path: "category_id",
                         select: "category_name",
-                    }
-                ]
+                    },
+                ],
             })
             .sort({ saved_date: -1 });
 
         const formattedSavedJobs = savedJobs
-            .filter(saved => saved.job_id) 
+            .filter((saved) => saved.job_id)
             .map((saved) => {
                 const job = saved.job_id;
-                
+
                 return {
                     _id: saved._id,
                     saved_date: saved.saved_date,
-                    days_since_saved: Math.floor((new Date() - new Date(saved.saved_date)) / (1000 * 60 * 60 * 24)),
+                    days_since_saved: Math.floor(
+                        (new Date() - new Date(saved.saved_date)) /
+                            (1000 * 60 * 60 * 24)
+                    ),
                     job: {
                         _id: job._id,
                         title: job.title,
@@ -455,13 +458,18 @@ router.get("/saved-jobs", auth, async (req, res) => {
                         job_type: job.job_type || "Full-time",
                         deadline: job.deadline,
                         benefits: job.benefits,
-                        employer_name: job.employer_id?.employer_name || "Unknown Company",
+                        employer_name:
+                            job.employer_id?.employer_name || "Unknown Company",
                         employer_logo: job.employer_id?.logo || null,
-                        location_name: job.location_id?.location_name || "Unknown Location",
-                        category_name: job.category_id?.category_name || "Unknown Category",
+                        location_name:
+                            job.location_id?.location_name ||
+                            "Unknown Location",
+                        category_name:
+                            job.category_id?.category_name ||
+                            "Unknown Category",
                         createdAt: job.createdAt,
-                        status: job.status || "active"
-                    }
+                        status: job.status || "active",
+                    },
                 };
             });
 
@@ -567,8 +575,9 @@ router.post("/apply-job", auth, async (req, res) => {
         }
 
         if (!candidate.resume_file) {
-            return res.status(400).json({ 
-                message: "Bạn cần tải lên CV trước khi ứng tuyển. Vui lòng cập nhật thông tin cá nhân." 
+            return res.status(400).json({
+                message:
+                    "Bạn cần tải lên CV trước khi ứng tuyển. Vui lòng cập nhật thông tin cá nhân.",
             });
         }
 
@@ -578,7 +587,9 @@ router.post("/apply-job", auth, async (req, res) => {
         });
 
         if (existingApplication) {
-            return res.status(400).json({ message: "Bạn đã ứng tuyển vị trí này rồi" });
+            return res
+                .status(400)
+                .json({ message: "Bạn đã ứng tuyển vị trí này rồi" });
         }
 
         const newApplication = new Application({
@@ -592,9 +603,9 @@ router.post("/apply-job", auth, async (req, res) => {
 
         await newApplication.save();
 
-        res.status(201).json({ 
+        res.status(201).json({
             message: "Ứng tuyển thành công!",
-            application: newApplication 
+            application: newApplication,
         });
     } catch (error) {
         console.error("Error applying for job:", error);
@@ -602,4 +613,25 @@ router.post("/apply-job", auth, async (req, res) => {
     }
 });
 
+// Route để check application status
+router.get("/application-status/:jobId", auth, async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        const candidateId = req.user.id;
+
+        const application = await Application.findOne({
+            candidate_id: candidateId,
+            job_id: jobId,
+        });
+
+        if (!application) {
+            return res.json({ status: null });
+        }
+
+        res.json({ status: application.status });
+    } catch (error) {
+        console.error("Error checking application status:", error);
+        res.status(500).json({ message: "Lỗi server" });
+    }
+});
 module.exports = router;

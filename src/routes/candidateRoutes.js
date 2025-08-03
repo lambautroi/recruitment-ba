@@ -598,7 +598,7 @@ router.post("/apply-job", auth, async (req, res) => {
             resume_file: candidate.resume_file,
             cover_letter: cover_letter || null,
             applied_date: new Date(),
-            status: "applied",
+            status: "pending",
         });
 
         await newApplication.save();
@@ -617,10 +617,21 @@ router.post("/apply-job", auth, async (req, res) => {
 router.get("/application-status/:jobId", auth, async (req, res) => {
     try {
         const { jobId } = req.params;
-        const candidateId = req.user.id;
+
+        if (req.user.role !== "user") {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        const candidate = await Candidate.findOne({
+            email: req.user.email,
+        });
+
+        if (!candidate) {
+            return res.status(404).json({ message: "Candidate not found" });
+        }
 
         const application = await Application.findOne({
-            candidate_id: candidateId,
+            candidate_id: candidate._id,
             job_id: jobId,
         });
 

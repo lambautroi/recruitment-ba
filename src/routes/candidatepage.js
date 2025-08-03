@@ -146,7 +146,6 @@ router.get("/filter", async (req, res) => {
     }
 });
 
-// ✅ XÓA ROUTE DUPLICATE VÀ CHỈ GIỮ LẠI 1 ROUTE /:id DUY NHẤT
 // GET /api/candidates/:id - Lấy thông tin chi tiết một candidate
 router.get("/:id", async (req, res) => {
     try {
@@ -184,7 +183,6 @@ router.get("/:id", async (req, res) => {
             resume_file: candidate.resume_file,
             status: candidate.status,
 
-            // ✅ THÊM CÁC TRƯỜNG MỚI
             birth_date: candidate.birth_date,
             marital_status: candidate.marital_status,
             career_objective: candidate.career_objective,

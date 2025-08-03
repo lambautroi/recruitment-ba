@@ -22,8 +22,8 @@ const applicationSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["applied", "accepted", "rejected"],
-            default: "applied",
+            enum: ["pending", "applied", "accepted", "rejected"],
+            default: "pending",
         },
         cover_letter: {
             type: String,

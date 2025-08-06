@@ -106,17 +106,23 @@ router.get("/profile", auth, async (req, res) => {
             // Tạo candidate mới nếu chưa có
             const newCandidate = new Candidate({
                 email: req.user.email,
-                full_name: req.user.full_name || "",
+                full_name: req.user.fullName || req.user.full_name || "",
+                phone: "",
+                status: "active",
             });
 
-            await newCandidate.save();
-            return res.json(newCandidate);
+            const savedCandidate = await newCandidate.save();
+            return res.json(savedCandidate);
         }
 
         res.json(candidate);
     } catch (error) {
         console.error("Error fetching candidate profile:", error);
-        res.status(500).json({ message: "Server error", error: error.message });
+        res.status(500).json({
+            message: "Server error",
+            error: error.message,
+            stack: error.stack,
+        });
     }
 });
 
@@ -127,25 +133,102 @@ router.put("/profile", auth, async (req, res) => {
             return res.status(403).json({ message: "Access denied" });
         }
 
-        // Lọc dữ liệu trước khi cập nhật
         const updateData = {};
-        Object.keys(req.body).forEach((key) => {
-            const value = req.body[key];
+        
+        const allowedFields = [
+            'full_name', 'phone', 'address', 'birth_date', 'gender', 
+            'marital_status', 'location_id', 'position_id', 'category_id',
+            'education', 'experience', 'salary_expectation', 'career_objective',
+            'work_preference', 'professional_skills', 'soft_skills', 'skills',
+            'profile_picture', 'resume_file', 'facebook'
+        ];
+
+        allowedFields.forEach((field) => {
+            const value = req.body[field];
             if (value !== "" && value !== null && value !== undefined) {
-                updateData[key] = value;
+                if (field === 'birth_date') {
+                    try {
+                        const dateValue = new Date(value);
+                        if (!isNaN(dateValue.getTime())) {
+                            updateData[field] = dateValue;
+                        } else {
+                            console.log("Invalid birth_date format:", value);
+                        }
+                    } catch (error) {
+                        console.log("Error parsing birth_date:", error);
+                    }
+                }
+                else if (['location_id', 'position_id', 'category_id', 'education', 'experience'].includes(field)) {
+                    if (typeof value === 'string' && value.trim() !== '') {
+                        if (value.match(/^[0-9a-fA-F]{24}$/)) {
+                            updateData[field] = value.trim();
+                        } else {
+                            console.log(`Invalid ObjectId format for ${field}:`, value);
+                        }
+                    }
+                }
+                else if (Array.isArray(value)) {
+                    updateData[field] = value.filter(item => item && item.trim && item.trim());
+                } 
+                else if (typeof value === 'string') {
+                    updateData[field] = value.trim();
+                } 
+                else if (typeof value === 'number') {
+                    updateData[field] = value;
+                } 
+                else {
+                    updateData[field] = value;
+                }
             }
         });
 
         const candidate = await Candidate.findOneAndUpdate(
             { email: req.user.email },
-            updateData,
-            { new: true, runValidators: true, upsert: true }
+            { 
+                ...updateData,
+                updated_at: new Date() 
+            },
+            { 
+                new: true, 
+                runValidators: true, 
+                upsert: true,
+                setDefaultsOnInsert: true 
+            }
         );
 
-        res.json({ message: "Profile updated successfully", candidate });
+        res.json({ 
+            message: "Profile updated successfully", 
+            candidate 
+        });
+
     } catch (error) {
         console.error("Error updating candidate profile:", error);
-        res.status(500).json({ message: "Server error", error: error.message });
+        console.error("Error stack:", error.stack); // ✅ Debug log
+
+        if (error.name === 'ValidationError') {
+            const validationErrors = Object.keys(error.errors).map(key => ({
+                field: key,
+                message: error.errors[key].message
+            }));
+            
+            return res.status(400).json({ 
+                message: "Validation error", 
+                error: error.message,
+                details: validationErrors
+            });
+        }
+        
+        if (error.name === 'CastError') {
+            return res.status(400).json({ 
+                message: `Invalid ${error.path}: ${error.value}`, 
+                error: "Cast error"
+            });
+        }
+        
+        res.status(500).json({ 
+            message: "Server error", 
+            error: error.message 
+        });
     }
 });
 

@@ -64,45 +64,45 @@ const upload = multer({
     },
 });
 
-router.post(
-    "/upload-logo",
-    authenticateToken,
-    upload.single("logo"),
-    async (req, res) => {
-        try {
-            if (req.user.role !== "employer") {
-                return res.status(403).json({ message: "Access denied" });
-            }
-
-            if (!req.file) {
-                return res.status(400).json({ message: "No file uploaded" });
-            }
-
-            // Tạo URL cho logo
-            const logoUrl = `/uploads/logos/${req.file.filename}`;
-
-            res.json({
-                message: "Logo uploaded successfully",
-                logoUrl: logoUrl,
-            });
-        } catch (error) {
-            console.error("Error uploading logo:", error);
-            res.status(500).json({ message: "Server error during upload" });
+// Upload logo route với auth middleware
+router.post("/upload-logo", auth, upload.single("logo"), async (req, res) => {
+    try {
+        if (req.user.role !== "employer") {
+            return res.status(403).json({ message: "Access denied" });
         }
+
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        if (req.file.size > 2 * 1024 * 1024) {
+            return res
+                .status(400)
+                .json({ message: "File size too large (max 2MB)" });
+        }
+
+        const logoUrl = `/uploads/logos/${req.file.filename}`;
+
+        res.json({
+            message: "Logo uploaded successfully",
+            logoUrl: logoUrl,
+        });
+    } catch (error) {
+        console.error("Error uploading logo:", error);
+        res.status(500).json({
+            message: "Server error during upload",
+            error: error.message,
+        });
     }
-);
+});
 
 // GET /api/employer/profile - Lấy thông tin profile
 router.get("/profile", auth, async (req, res) => {
     try {
-        // ✅ KIỂM TRA ROLE
         if (req.user.role !== "employer") {
-            return res
-                .status(403)
-                .json({ message: "Chỉ nhà tuyển dụng mới có thể truy cập" });
+            return res.status(403).json({ message: "Access denied" });
         }
 
-        // ✅ TÌM EMPLOYER THEO EMAIL
         const employer = await Employer.findOne({
             email: req.user.email,
         })
@@ -110,15 +110,28 @@ router.get("/profile", auth, async (req, res) => {
             .populate("category_id", "category_name");
 
         if (!employer) {
-            return res
-                .status(404)
-                .json({ message: "Không tìm thấy thông tin doanh nghiệp" });
+            console.log("Creating new employer for email:", req.user.email);
+
+            const newEmployer = new Employer({
+                email: req.user.email,
+                employer_name: req.user.fullName || req.user.full_name || "",
+                phone: "",
+            });
+
+            const savedEmployer = await newEmployer.save();
+            console.log("New employer created:", savedEmployer);
+            return res.json(savedEmployer);
         }
 
+        console.log("Found existing employer:", employer);
         res.json(employer);
     } catch (error) {
         console.error("Error fetching employer profile:", error);
-        res.status(500).json({ message: "Lỗi server", error: error.message });
+        res.status(500).json({
+            message: "Server error",
+            error: error.message,
+            stack: error.stack,
+        });
     }
 });
 
@@ -126,86 +139,80 @@ router.get("/profile", auth, async (req, res) => {
 router.put("/profile", auth, async (req, res) => {
     try {
         if (req.user.role !== "employer") {
-            return res
-                .status(403)
-                .json({ message: "Chỉ nhà tuyển dụng mới có thể cập nhật" });
+            return res.status(403).json({ message: "Access denied" });
         }
-
-        // ✅ TÌM EMPLOYER THEO EMAIL
-        const employer = await Employer.findOne({
-            email: req.user.email,
-        });
-
-        if (!employer) {
-            return res
-                .status(404)
-                .json({ message: "Không tìm thấy thông tin doanh nghiệp" });
-        }
-
-        const {
-            employer_name,
-            employer_description,
-            contact_info,
-            location_id,
-            category_id,
-            established_date,
-            tax_code,
-            company_size,
-            business_license,
-            phone,
-            email,
-            website,
-            address,
-            business_type,
-            employer_logo,
-        } = req.body;
-
-        // ✅ CHỈ CẬP NHẬT CÁC FIELD KHÔNG TRỐNG
         const updateData = {};
 
-        if (employer_name !== undefined && employer_name !== null)
-            updateData.employer_name = employer_name;
-        if (employer_description !== undefined && employer_description !== null)
-            updateData.employer_description = employer_description;
-        if (contact_info !== undefined && contact_info !== null)
-            updateData.contact_info = contact_info;
-        if (location_id && location_id !== "" && location_id !== null)
-            updateData.location_id = location_id;
-        if (category_id && category_id !== "" && category_id !== null)
-            updateData.category_id = category_id;
-        if (established_date !== undefined && established_date !== null)
-            updateData.established_date = established_date;
-        if (tax_code !== undefined && tax_code !== null)
-            updateData.tax_code = tax_code;
-        if (company_size !== undefined && company_size !== null)
-            updateData.company_size = company_size;
-        if (business_license !== undefined && business_license !== null)
-            updateData.business_license = business_license;
-        if (phone !== undefined && phone !== null) updateData.phone = phone;
-        if (email !== undefined && email !== null) updateData.email = email;
-        if (website !== undefined && website !== null)
-            updateData.website = website;
-        if (address !== undefined && address !== null)
-            updateData.address = address;
-        if (business_type !== undefined && business_type !== null)
-            updateData.business_type = business_type;
-        if (employer_logo !== undefined && employer_logo !== null)
-            updateData.employer_logo = employer_logo;
+        const allowedFields = [
+            "employer_name",
+            "employer_description",
+            "contact_info",
+            "location_id",
+            "category_id",
+            "established_date",
+            "tax_code",
+            "company_size",
+            "business_license",
+            "phone",
+            "email",
+            "website",
+            "address",
+            "industry",
+            "business_type",
+            "employer_logo",
+        ];
 
-        console.log("Update data:", updateData);
+        allowedFields.forEach((field) => {
+            const value = req.body[field];
+            if (value !== "" && value !== null && value !== undefined) {
+                if (typeof value === "string") {
+                    updateData[field] = value.trim();
+                } else {
+                    updateData[field] = value;
+                }
+            }
+        });
 
-        const updatedEmployer = await Employer.findByIdAndUpdate(
-            employer._id,
-            updateData,
-            { new: true, runValidators: false }
+        const employer = await Employer.findOneAndUpdate(
+            { email: req.user.email },
+            {
+                ...updateData,
+                updated_at: new Date(),
+            },
+            {
+                new: true,
+                runValidators: true,
+                upsert: true,
+                setDefaultsOnInsert: true,
+            }
         )
             .populate("location_id", "location_name")
             .populate("category_id", "category_name");
 
-        res.json(updatedEmployer);
+        res.json({
+            message: "Profile updated successfully",
+            employer,
+        });
     } catch (error) {
-        console.error("Error updating employer profile:", error);
-        res.status(500).json({ message: "Lỗi server", error: error.message });
+        if (error.name === "ValidationError") {
+            return res.status(400).json({
+                message: "Validation error",
+                error: error.message,
+                details: error.errors,
+            });
+        }
+
+        if (error.code === 11000) {
+            return res.status(400).json({
+                message: "Email already exists in system",
+                error: "Duplicate email",
+            });
+        }
+
+        res.status(500).json({
+            message: "Server error",
+            error: error.message,
+        });
     }
 });
 

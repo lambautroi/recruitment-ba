@@ -5,7 +5,7 @@ const jobSchema = new mongoose.Schema(
         title: { type: String, required: true },
         employer_id: { type: mongoose.Schema.Types.ObjectId, ref: "Employer" },
         location_id: { type: mongoose.Schema.Types.ObjectId, ref: "Location" },
-        category_id: { type: mongoose.Schema.Types.ObjectId, ref: "Category" }, // ✅ THÊM TRƯỜNG NÀY
+        category_id: { type: mongoose.Schema.Types.ObjectId, ref: "Category" }, 
         position_id: { type: mongoose.Schema.Types.ObjectId, ref: "Position" },
         experience_id: {
             type: mongoose.Schema.Types.ObjectId,

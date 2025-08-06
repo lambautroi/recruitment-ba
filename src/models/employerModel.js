@@ -4,7 +4,8 @@ const employerSchema = new mongoose.Schema(
     {
         employer_name: {
             type: String,
-            required: true,
+            required: false,
+            trim: true
         },
         employer_logo: {
             type: String,
@@ -22,7 +23,7 @@ const employerSchema = new mongoose.Schema(
         category_id: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Category",
-            required: true,
+            required: false, 
         },
         num_job: {
             type: Number,
@@ -38,7 +39,7 @@ const employerSchema = new mongoose.Schema(
             type: String,
             enum: [
                 "Dưới 50 nhân viên",
-                "50-100 nhân viên",
+                "50-100 nhân viên", 
                 "100-500 nhân viên",
                 "Trên 500 nhân viên",
             ],
@@ -48,9 +49,14 @@ const employerSchema = new mongoose.Schema(
         },
         phone: {
             type: String,
+            required: false, 
         },
         email: {
             type: String,
+            required: true,  
+            unique: true, // ✅ SỬA: Chỉ dùng unique: true, không dùng index: true
+            trim: true,
+            lowercase: true
         },
         website: {
             type: String,
@@ -70,8 +76,16 @@ const employerSchema = new mongoose.Schema(
                 "Khác",
             ],
         },
+        updated_at: {
+            type: Date,
+            default: Date.now
+        }
     },
-    { timestamps: true }
+    { 
+        timestamps: true,
+        toJSON: { virtuals: true },
+        toObject: { virtuals: true }
+    }
 );
 
 module.exports = mongoose.model("Employer", employerSchema);

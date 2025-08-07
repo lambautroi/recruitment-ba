@@ -10,7 +10,12 @@ const auth = require("../middleware/auth");
 // GET /api/employer/jobs - Lấy danh sách tin tuyển dụng của employer
 router.get("/", auth, async (req, res) => {
     try {
-        const { page = 1, limit = 10 } = req.query;
+        const {
+            page = 1,
+            limit = 10,
+            sortBy = "createdAt",
+            sortOrder = "desc",
+        } = req.query;
 
         const employer = await Employer.findOne({
             email: req.user.email,
@@ -24,21 +29,116 @@ router.get("/", auth, async (req, res) => {
 
         const skip = (page - 1) * limit;
 
-        // Lấy danh sách jobs với pagination
+        if (sortBy === "applicant_count") {
+            const jobs = await Job.aggregate([
+                { $match: { employer_id: employer._id } },
+                {
+                    $lookup: {
+                        from: "applications",
+                        localField: "_id",
+                        foreignField: "job_id",
+                        as: "applications",
+                    },
+                },
+                {
+                    $addFields: {
+                        applicant_count: { $size: "$applications" },
+                    },
+                },
+                {
+                    $sort: {
+                        applicant_count: sortOrder === "desc" ? -1 : 1,
+                    },
+                },
+                { $skip: skip },
+                { $limit: parseInt(limit) },
+                {
+                    $lookup: {
+                        from: "categories",
+                        localField: "category_id",
+                        foreignField: "_id",
+                        as: "category_id",
+                    },
+                },
+                {
+                    $lookup: {
+                        from: "locations",
+                        localField: "location_id",
+                        foreignField: "_id",
+                        as: "location_id",
+                    },
+                },
+                {
+                    $lookup: {
+                        from: "positions",
+                        localField: "position_id",
+                        foreignField: "_id",
+                        as: "position_id",
+                    },
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        title: 1,
+                        salary_range: 1,
+                        quantity: 1,
+                        posted_at: 1,
+                        expiration_date: 1,
+                        status: 1,
+                        featured: 1,
+                        createdAt: 1,
+                        applicant_count: 1,
+                        category_name: {
+                            $arrayElemAt: ["$category_id.category_name", 0],
+                        },
+                        location_name: {
+                            $arrayElemAt: ["$location_id.location_name", 0],
+                        },
+                        position_name: {
+                            $arrayElemAt: ["$position_id.position_name", 0],
+                        },
+                    },
+                },
+            ]);
+
+            const totalJobs = await Job.countDocuments({
+                employer_id: employer._id,
+            });
+
+            const totalPages = Math.ceil(totalJobs / limit);
+
+            return res.json({
+                jobs: jobs,
+                currentPage: parseInt(page),
+                totalPages,
+                totalJobs,
+                limit: parseInt(limit),
+                sortBy,
+                sortOrder,
+            });
+        }
+
+        const sortOptions = {};
+        if (sortBy === "title") {
+            sortOptions.title = sortOrder === "desc" ? -1 : 1;
+        } else if (sortBy === "expiration_date") {
+            sortOptions.expiration_date = sortOrder === "desc" ? -1 : 1;
+        } else {
+            sortOptions.createdAt = sortOrder === "desc" ? -1 : 1;
+        }
+
         const jobs = await Job.find({ employer_id: employer._id })
             .populate("category_id", "category_name")
             .populate("location_id", "location_name")
             .populate("position_id", "position_name")
-            .sort({ createdAt: -1 })
+            .sort(sortOptions)
             .skip(skip)
             .limit(parseInt(limit));
 
-        // Đếm tổng số jobs
         const totalJobs = await Job.countDocuments({
             employer_id: employer._id,
         });
 
-        // Lấy số lượng ứng viên cho mỗi job
         const jobsWithApplicants = await Promise.all(
             jobs.map(async (job) => {
                 const applicantCount = await Application.countDocuments({
@@ -74,6 +174,8 @@ router.get("/", auth, async (req, res) => {
             totalPages,
             totalJobs,
             limit: parseInt(limit),
+            sortBy,
+            sortOrder,
         });
     } catch (error) {
         console.error("Lỗi khi lấy danh sách tin tuyển dụng:", error);
@@ -192,7 +294,9 @@ router.get("/:id/applicants", auth, async (req, res) => {
             .skip(skip)
             .limit(parseInt(limit));
 
-        const totalApplicants = await Application.countDocuments(applicationFilter);
+        const totalApplicants = await Application.countDocuments(
+            applicationFilter
+        );
 
         const applicants = applications.map((app) => ({
             application_id: app._id,
@@ -250,7 +354,10 @@ router.put("/applications/:applicationId/status", auth, async (req, res) => {
                 .json({ message: "Không tìm thấy đơn ứng tuyển" });
         }
 
-        if (application.job_id.employer_id.toString() !== employer._id.toString()) {
+        if (
+            application.job_id.employer_id.toString() !==
+            employer._id.toString()
+        ) {
             return res
                 .status(403)
                 .json({ message: "Không có quyền cập nhật đơn ứng tuyển này" });

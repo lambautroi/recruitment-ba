@@ -9,13 +9,11 @@ router.get("/categories-with-jobs", async (req, res) => {
 
         const categoriesWithJobCount = await Promise.all(
             categories.map(async (category) => {
-                // Tìm employers thuộc category này
                 const Employer = require("../models/employerModel");
                 const employers = await Employer.find({
                     category_id: category._id,
                 });
                 
-                // Đếm số jobs của các employers này
                 const employerIds = employers.map(emp => emp._id);
                 const jobCount = await Job.countDocuments({
                     employer_id: { $in: employerIds },
